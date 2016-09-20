@@ -21,7 +21,7 @@ public interface IOrderService {
 	OrderBean findOne(String id);
 	/**
 	 * 
-	 * @brief 根据用户id查询订单，并按创建时间倒排序
+	 * @brief 根据用户id查询订单
 	 * @details （必填）
 	 * @param userId
 	 * @param page
@@ -30,5 +30,7 @@ public interface IOrderService {
 	 * @date 2016年9月8日下午2:36:20
 	 */
 	public Page<Map<String, Object>> queryByUserId(String userId,Pageable page);
+	
+	public Page<Map<String, Object>> queryByUserIdSort(String userId,Pageable page);
 	OrderBean insert(String productName,String userId,Date createDate);
 }

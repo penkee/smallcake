@@ -48,7 +48,7 @@ public class DistSearchPageHelperer {
             List<Map<String,Object>> list=new ArrayList<Map<String,Object>>();
             //有排序
             if(!StringFunc.isNull(orderby)){
-            	String sql=sqlStr+" "+orderby+" limit "+ pageNum * pageSize;    
+            	String sql=sqlStr+" order by "+orderby+" limit "+ pageNum * pageSize;    
                 //排序
                 sTime=System.currentTimeMillis();
                 for(JdbcTemplate jdbcTemplate:jdbcList){
@@ -62,8 +62,17 @@ public class DistSearchPageHelperer {
                 //解析order by字符串  XXX或者  XXX,XXX或者XXX desc,XXX
                 String[] ors= orderby.split(",");
                 sort(list,ors);
-                logger.info("执行排序："+(System.currentTimeMillis()-sTime)+"，"+sqlStr);
-                resPage= new PageImpl<Map<String,Object>>(list.subList((pageNum-1)*pageSize, pageNum*pageSize), page, allRowCount);
+                logger.info("执行排序的耗时："+(System.currentTimeMillis()-sTime)+"ms，"+sql);
+                
+                if(list.size()>=(pageNum-1)*pageSize){
+                	if(list.size()>=pageNum*pageSize){
+                		resPage= new PageImpl<Map<String,Object>>(list.subList((pageNum-1)*pageSize, pageNum*pageSize), page, allRowCount);
+                	}else{
+                		resPage= new PageImpl<Map<String,Object>>(list.subList((pageNum-1)*pageSize,list.size()), page, allRowCount);
+                	}
+                }else{
+                	resPage= new PageImpl<Map<String,Object>>(null, page, allRowCount);
+                }
             }
             else{
                 sTime=System.currentTimeMillis();
@@ -73,7 +82,7 @@ public class DistSearchPageHelperer {
                 	if(dp!=null&&dp.isNeed){
                 		JdbcTemplate jdbcTemplate=jdbcList.get(dp.distDBID);
                 		//计算起点
-                		String sql=sqlStr+" limit "+dp.startIndex+","+dp.startIndex+dp.size;
+                		String sql=sqlStr+" limit "+dp.startIndex+","+dp.size;
                         List<Map<String, Object>> currList=jdbcTemplate.queryForList(sql,para);
                    	 
     	               	if(currList!=null&&currList.size()>0){
@@ -82,7 +91,7 @@ public class DistSearchPageHelperer {
                 	}
                 }
                 resPage= new PageImpl<Map<String,Object>>(list, page, allRowCount);
-                logger.info("执行不排序："+(System.currentTimeMillis()-sTime));
+                logger.info("执行不排序耗时："+(System.currentTimeMillis()-sTime)+"ms");
             }
                    
         return resPage;
@@ -92,7 +101,7 @@ public class DistSearchPageHelperer {
      * @param ors 
      * added by cruze(penkee@163.com) at 2014-9-24
      */
-	private void sort(List<Map<String, Object>> list, String[] ors) {
+	public void sort(List<Map<String, Object>> list, String[] ors) {
 		// TODO Auto-generated method stub
 		for (int i = 0; i < list.size() - 1; i++) {
 			for (int j = i + 1; j < list.size(); j++) {
@@ -128,7 +137,7 @@ public class DistSearchPageHelperer {
 			isDesc = true;
 		}
 
-		String key = o1.replace(" desc", "").trim().toUpperCase();
+		String key = o1.replace(" desc", "").trim();
 
 		Object aV = a.get(key);
 		Object bV = b.get(key);
@@ -172,7 +181,7 @@ public class DistSearchPageHelperer {
 			dp[dbi].size=pageSize;
 			dp[dbi].isNeed=true;
 			
-			logger.info("结果查询 db-"+dbi+"查询第"+dp[dbi].startIndex+"-"+(dp[dbi].size+dp[dbi].startIndex-1));
+			logger.info("结果查询第"+pageNum+"页：db-"+dbi+"查询第"+dp[dbi].startIndex+"-"+(dp[dbi].size+dp[dbi].startIndex-1));
 			return dp;
 		}else{
 			if(minCanPageNum>0){
@@ -247,13 +256,13 @@ public class DistSearchPageHelperer {
 			
 			for (DistPage distPage : dp) {
 				if(distPage!=null&&distPage.isNeed)
-					logger.info("查询第  "+i+"页的db-"+distPage.distDBID+"查询第"+distPage.startIndex+"-"+(distPage.size+distPage.startIndex-1));
+					logger.info("结果查询第"+pageNum+"页：需要经过查询第  "+i+"页的db-"+distPage.distDBID+"查询第"+distPage.startIndex+"-"+(distPage.size+distPage.startIndex-1));
 			}
 		}
 		
 		for (DistPage distPage : dp) {
 			if(distPage!=null&&distPage.isNeed)
-				logger.info("结果查询 db-"+distPage.distDBID+"查询第"+distPage.startIndex+"-"+(distPage.size+distPage.startIndex-1));
+				logger.info("结果查询第"+pageNum+"页： db-"+distPage.distDBID+"查询第"+distPage.startIndex+"-"+(distPage.size+distPage.startIndex-1));
 		}
 		return dp;
 	}

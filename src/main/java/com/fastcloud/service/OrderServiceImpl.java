@@ -3,11 +3,13 @@
  */
 package com.fastcloud.service;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.beanutils.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -32,8 +34,17 @@ public class OrderServiceImpl extends BaseService implements IOrderService{
 	@Override
 	public OrderBean findOne(String id) {
 		JdbcTemplate jdbcTemplate= super.getJdbcTemplate(id);
-		   
-	    return jdbcTemplate.queryForObject("select * from biz_order where id=", OrderBean.class,id);
+		
+	    Map<String,Object> map= jdbcTemplate.queryForMap("select * from biz_order where id=?",id);
+
+		OrderBean order=new OrderBean();
+		try {
+			BeanUtils.populate(order, map);
+		} catch (IllegalAccessException | InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+		return order;
 	}
 	/* (non-Javadoc)
 	 * @see com.fastcloud.service.IOrderService#queryByUserId(java.lang.String)
@@ -44,12 +55,23 @@ public class OrderServiceImpl extends BaseService implements IOrderService{
 		List<JdbcTemplate> jdbcTemplateList=super.getJdbcTemplateAll();
 		
 		Object[] para=new Object[1];
-		para[0]="43";
-		Page<Map<String, Object>> pageRes=new DistSearchPageHelperer().executeQueryByPage("select * from biz_order where userId=?1", "", page, para, jdbcTemplateList);
+		para[0]=userId;
+		Page<Map<String, Object>> pageRes=new DistSearchPageHelperer().executeQueryByPage("select * from biz_order where userId=?", "", page, para, jdbcTemplateList);
 		//Page p=new PageImpl(list, page, all);
 		return pageRes;
 	}
 
+	@Override
+	public Page<Map<String, Object>> queryByUserIdSort(String userId,Pageable page) {
+		// TODO Auto-generated method stub
+		List<JdbcTemplate> jdbcTemplateList=super.getJdbcTemplateAll();
+		
+		Object[] para=new Object[1];
+		para[0]=userId;
+		Page<Map<String, Object>> pageRes=new DistSearchPageHelperer().executeQueryByPage("select * from biz_order where userId=?", "createDate desc,id", page, para, jdbcTemplateList);
+		//Page p=new PageImpl(list, page, all);
+		return pageRes;
+	}
 	/* (non-Javadoc)
 	 * @see com.fastcloud.service.IOrderService#insert(java.lang.String, java.lang.String, java.util.Date)
 	 */
